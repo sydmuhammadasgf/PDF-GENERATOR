@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1020">
+
+  <title>KidsBook Studio</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Library untuk membuat PDF -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+    defer>
+  </script>
+
+  <script src="tools.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-icon">✦</span>
+
+      <span>
+        KidsBook <b>Studio</b>
+        <small>CREATIVE PDF LAB</small>
+      </span>
+    </a>
+
+    <button id="themeBtn" class="button secondary">
+      ☼ Ganti Tema
+    </button>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <span class="eyebrow">CREATIVE WORKSPACE</span>
+
+      <h1>
+        Buat Buku Aktivitas Anak
+        <span>Dengan Mudah.</span>
+      </h1>
+
+      <p>
+        Buat buku mewarnai, latihan menulis, matematika,
+        dan teka-teki untuk anak-anak. Atur halaman,
+        lihat pratinjau, lalu ekspor menjadi PDF.
+      </p>
+
+      <div class="hero-tags">
+        <span>✓ Tanpa akun</span>
+        <span>✓ Pengaturan fleksibel</span>
+        <span>✓ Ekspor PDF</span>
+      </div>
+    </section>
+
+    <section class="workspace">
+
+      <!-- PANEL PENGATURAN -->
+
+      <aside class="card settings">
+
+        <div class="section-heading">
+          <span class="step">01</span>
+
+          <div>
+            <h2>Pengaturan Buku</h2>
+            <p>Atur buku aktivitasmu.</p>
+          </div>
+        </div>
+
+        <label for="bookTitle">Judul Buku</label>
+
+        <input
+          id="bookTitle"
+          class="input"
+          type="text"
+          maxlength="100"
+          value="Petualangan Seru Anak"
+        >
+
+        <div class="grid-two">
+
+          <div>
+            <label for="bookType">Jenis Aktivitas</label>
+
+            <select id="bookType" class="input">
+              <option value="coloring">Buku Mewarnai</option>
+              <option value="tracing">Latihan Menulis</option>
+              <option value="math">Matematika</option>
+              <option value="puzzle">Teka-teki</option>
+              <option value="mixed">Campuran</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="paperSize">Ukuran Kertas</label>
+
+            <select id="paperSize" class="input">
+              <option value="a4">A4</option>
+              <option value="letter">Letter</option>
+              <option value="a5">A5</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="grid-two">
+
+          <div>
+            <label for="pageCount">Jumlah Halaman</label>
+
+            <input
+              id="pageCount"
+              class="input"
+              type="number"
+              min="1"
+              max="1000"
+              value="20"
+            >
+          </div>
+
+          <div>
+            <label for="ageGroup">Usia Anak</label>
+
+            <select id="ageGroup" class="input">
+              <option value="3-5">3–5 tahun</option>
+              <option value="6-8" selected>6–8 tahun</option>
+              <option value="9-12">9–12 tahun</option>
+            </select>
+          </div>
+
+        </div>
+
+        <label for="theme">Tema Ilustrasi</label>
+
+        <select id="theme" class="input">
+          <option value="animals">Hewan Lucu</option>
+          <option value="space">Luar Angkasa</option>
+          <option value="ocean">Dunia Laut</option>
+          <option value="garden">Kebun Ajaib</option>
+          <option value="vehicles">Kendaraan</option>
+          <option value="shapes">Bentuk dan Benda</option>
+        </select>
+
+        <div class="difficulty-heading">
+          <label for="difficulty">Tingkat Kesulitan</label>
+          <span id="difficultyValue">Mudah</span>
+        </div>
+
+        <input
+          id="difficulty"
+          class="range"
+          type="range"
+          min="1"
+          max="3"
+          value="1"
+        >
+
+        <div class="range-labels">
+          <span>Mudah</span>
+          <span>Sedang</span>
+          <span>Menantang</span>
+        </div>
+
+        <label class="check-option">
+          <input type="checkbox" id="includeCover" checked>
+
+          <span>
+            <b>Sertakan Sampul</b>
+            <small>Buat halaman depan buku.</small>
+          </span>
+        </label>
+
+        <label class="check-option">
+          <input type="checkbox" id="includeAnswers">
+
+          <span>
+            <b>Sertakan Kunci Jawaban</b>
+            <small>Untuk soal matematika.</small>
+          </span>
+        </label>
+
+        <div class="notice">
+          <span>ⓘ</span>
+
+          <p>
+            Buku dibuat langsung di browser.
+            Buku dengan ratusan halaman membutuhkan
+            memori dan waktu lebih banyak.
+          </p>
+        </div>
+
+        <button id="generateBtn" class="button primary full">
+          ✦ Buat Buku PDF
+          <span>↗</span>
+        </button>
+
+      </aside>
+
+      <!-- PANEL PRATINJAU -->
+
+      <section class="card preview-panel">
+
+        <div class="section-heading preview-heading">
+          <span class="step">02</span>
+
+          <div>
+            <h2>Pratinjau Buku</h2>
+            <p>Lihat rancangan halamanmu.</p>
+          </div>
+        </div>
+
+        <div class="preview-controls">
+          <button id="prevBtn" class="icon-button">←</button>
+
+          <span id="previewCounter">1 / 20</span>
+
+          <button id="nextBtn" class="icon-button">→</button>
+        </div>
+
+        <div class="preview-stage">
+
+          <div class="paper-preview" id="pagePreview">
+
+            <div class="paper-header">
+              <span>KIDSBOOK STUDIO</span>
+              <span>AKTIVITAS ANAK</span>
+            </div>
+
+            <h3 id="previewTitle">
+              Petualangan Seru Anak
+            </h3>
+
+            <div id="previewIllustration" class="illustration">
+              🐻 ✿ ☁
+            </div>
+
+            <p id="previewInstruction">
+              Warnai gambar sesuai imajinasimu!
+            </p>
+
+            <div class="drawing-area">
+
+              <div class="drawing-circle"></div>
+
+              <div class="drawing-ear ear-left"></div>
+
+              <div class="drawing-ear ear-right"></div>
+
+              <div class="drawing-face">• ‿ •</div>
+
+            </div>
+
+            <div class="paper-footer">
+              <span>Nama: ______________</span>
+              <span id="previewPageNo">1</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="preview-status">
+          <span class="live-dot"></span>
+          <span>Live Preview</span>
+          <span class="paper-label" id="paperLabel">A4</span>
+        </div>
+
+        <div id="progressWrap" class="progress-box hidden">
+
+          <div class="progress-heading">
+            <b id="progressText">Menyiapkan PDF...</b>
+            <span id="progressPercent">0%</span>
+          </div>
+
+          <div class="progress-track">
+            <div id="progressBar"></div>
+          </div>
+
+          <p id="progressNote">
+            Jangan tutup tab sampai selesai.
+          </p>
+
+        </div>
+
+        <div id="resultBox" class="result-box hidden">
+
+          <div class="success-icon">✓</div>
+
+          <div class="result-content">
+            <b>PDF berhasil dibuat!</b>
+            <p id="resultText">File siap diunduh.</p>
+          </div>
+
+          <button id="downloadBtn" class="button primary">
+            Unduh PDF ↓
+          </button>
+
+        </div>
+
+      </section>
+
+    </section>
+
+    <section class="features">
+
+      <article class="feature-card">
+        <span class="feature-icon">✎</span>
+        <h3>Aktivitas Variatif</h3>
+        <p>Mewarnai, menulis, matematika, dan teka-teki.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon">▧</span>
+        <h3>Siap Dicetak</h3>
+        <p>Halaman PDF dirancang agar mudah dicetak.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon">↗</span>
+        <h3>Ekspor PDF</h3>
+        <p>Simpan hasil buku aktivitas ke perangkatmu.</p>
+      </article>
+
+    </section>
+
+    <footer>
+      KidsBook Studio · Belajar, berkreasi, dan bermain.
+    </footer>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+</body>
+  </html>
