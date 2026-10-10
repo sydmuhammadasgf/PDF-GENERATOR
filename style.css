@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ========================================
+   1. VARIABEL TEMA
+======================================== */
+
 :root {
   --bg: #0b1020;
   --surface: #111a2e;
@@ -15,26 +19,9 @@
   --shadow: 0 18px 50px rgba(0, 0, 0, .22);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(ellipse at top left, rgba(108, 92, 231, .14), transparent 40%),
-    radial-gradient(ellipse at bottom right, rgba(103, 232, 249, .08), transparent 35%),
-    var(--bg);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  line-height: 1.6;
-  transition: background .25s, color .25s;
-}
+/* ========================================
+   2. MODE TERANG
+======================================== */
 
 body.light-theme {
   --bg: #f3f6ff;
@@ -48,6 +35,42 @@ body.light-theme {
   --cyan: #087f9b;
   --green: #14865d;
   --shadow: 0 18px 50px rgba(44, 62, 100, .09);
+}
+
+/* ========================================
+   3. PENGATURAN DASAR
+======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      ellipse at top left,
+      rgba(108, 92, 231, .14),
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      rgba(103, 232, 249, .08),
+      transparent 35%
+    ),
+    var(--bg);
+
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.6;
+
+  transition: background .25s, color .25s;
 }
 
 button,
@@ -67,18 +90,26 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
+/* ========================================
+   4. HEADER
+======================================== */
+
 .topbar {
   min-height: 76px;
   padding: 14px max(5%, calc((100% - 1200px) / 2));
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
+
   position: sticky;
   top: 0;
   z-index: 10;
+
   backdrop-filter: blur(18px);
 }
 
@@ -86,8 +117,10 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
+
   color: var(--text);
   text-decoration: none;
+
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
   font-size: 19px;
@@ -101,6 +134,7 @@ select:focus-visible {
 .brand small {
   display: block;
   margin-top: 5px;
+
   font-size: 9px;
   letter-spacing: 2px;
   color: var(--muted);
@@ -109,19 +143,35 @@ select:focus-visible {
 .brand-icon {
   width: 42px;
   height: 42px;
+
   display: grid;
   place-items: center;
+
   border-radius: 14px;
   color: #fff;
   font-size: 23px;
-  background: linear-gradient(135deg, var(--primary), #53c8e8);
+
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    #53c8e8
+  );
+
   box-shadow: 0 8px 22px rgba(108, 92, 231, .3);
 }
+
+/* ========================================
+   5. CONTAINER
+======================================== */
 
 .container {
   width: min(1200px, 90%);
   margin: 0 auto;
 }
+
+/* ========================================
+   6. HERO SECTION
+======================================== */
 
 .hero {
   padding: 76px 0 54px;
@@ -131,10 +181,13 @@ select:focus-visible {
 .eyebrow {
   display: inline-flex;
   padding: 7px 12px;
+
   border: 1px solid var(--border);
   border-radius: 999px;
+
   background: var(--surface);
   color: var(--cyan);
+
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.7px;
@@ -149,6 +202,7 @@ p {
 
 h1 {
   margin: 22px 0 18px;
+
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(34px, 5.5vw, 58px);
   line-height: 1.12;
@@ -158,7 +212,13 @@ h1 {
 
 h1 span {
   display: block;
-  background: linear-gradient(90deg, var(--primary), var(--cyan));
+
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    var(--cyan)
+  );
+
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -166,6 +226,7 @@ h1 span {
 
 .hero > p {
   max-width: 660px;
+
   color: var(--muted);
   font-size: 16px;
   line-height: 1.9;
@@ -180,25 +241,41 @@ h1 span {
 
 .hero-tags span {
   padding: 8px 12px;
+
   border: 1px solid var(--border);
   border-radius: 10px;
+
   background: var(--surface);
   color: var(--muted);
   font-size: 12px;
 }
 
+/* ========================================
+   7. WORKSPACE
+======================================== */
+
 .workspace {
   display: grid;
-  grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr);
+
+  grid-template-columns:
+    minmax(300px, .9fr)
+    minmax(0, 1.1fr);
+
   align-items: start;
   gap: 24px;
 }
 
+/* ========================================
+   8. CARD
+======================================== */
+
 .card {
   min-width: 0;
   padding: 26px;
+
   border: 1px solid var(--border);
   border-radius: var(--radius);
+
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -207,6 +284,7 @@ h1 span {
   display: flex;
   align-items: center;
   gap: 14px;
+
   margin-bottom: 25px;
 }
 
@@ -214,16 +292,20 @@ h1 span {
   width: 43px;
   height: 43px;
   flex-shrink: 0;
+
   display: grid;
   place-items: center;
+
   border-radius: 14px;
   background: var(--surface-2);
   color: var(--primary);
+
   font-weight: 800;
 }
 
 .section-heading h2 {
   margin-bottom: 3px;
+
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 19px;
 }
@@ -234,11 +316,16 @@ h1 span {
   font-size: 13px;
 }
 
+/* ========================================
+   9. FORM SETTINGS
+======================================== */
+
 .settings > label:not(.check-option),
 .settings .grid-two label,
 .difficulty-heading label {
   display: block;
   margin-bottom: 8px;
+
   font-size: 13px;
   font-weight: 700;
 }
@@ -246,12 +333,16 @@ h1 span {
 .input {
   width: 100%;
   min-height: 46px;
+
   padding: 11px 13px;
   margin-bottom: 19px;
+
   border: 1px solid var(--border);
   border-radius: 11px;
+
   background: var(--surface-2);
   color: var(--text);
+
   outline: none;
 }
 
@@ -265,6 +356,10 @@ h1 span {
   gap: 13px;
 }
 
+/* ========================================
+   10. TINGKAT KESULITAN
+======================================== */
+
 .difficulty-heading {
   display: flex;
   justify-content: space-between;
@@ -274,6 +369,7 @@ h1 span {
 
 .difficulty-heading span {
   margin-bottom: 8px;
+
   color: var(--cyan);
   font-size: 12px;
   font-weight: 700;
@@ -287,16 +383,23 @@ h1 span {
 .range-labels {
   display: flex;
   justify-content: space-between;
+
   margin-top: 4px;
   margin-bottom: 23px;
+
   color: var(--muted);
   font-size: 11px;
 }
+
+/* ========================================
+   11. CHECKBOX
+======================================== */
 
 .check-option {
   display: flex;
   align-items: flex-start;
   gap: 11px;
+
   margin: 17px 0;
   cursor: pointer;
 }
@@ -304,8 +407,10 @@ h1 span {
 .check-option input {
   width: 18px;
   height: 18px;
+
   margin-top: 3px;
   flex-shrink: 0;
+
   accent-color: var(--primary);
 }
 
@@ -320,39 +425,56 @@ h1 span {
 
 .check-option small {
   margin-top: 3px;
+
   color: var(--muted);
   font-size: 11px;
 }
+
+/* ========================================
+   12. NOTICE
+======================================== */
 
 .notice {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+
   margin: 24px 0;
   padding: 13px;
+
   border: 1px solid var(--border);
   border-radius: 12px;
+
   background: var(--surface-2);
   color: var(--cyan);
 }
 
 .notice p {
   margin: 0;
+
   color: var(--muted);
   font-size: 11px;
   line-height: 1.7;
 }
 
+/* ========================================
+   13. BUTTON UMUM
+======================================== */
+
 .button {
   min-height: 44px;
   padding: 11px 16px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+
   border: 1px solid transparent;
   border-radius: 11px;
+
   font-weight: 700;
+
   transition: transform .2s, filter .2s;
 }
 
@@ -362,7 +484,12 @@ h1 span {
 }
 
 .primary {
-  background: linear-gradient(135deg, var(--primary-2), var(--primary));
+  background: linear-gradient(
+    135deg,
+    var(--primary-2),
+    var(--primary)
+  );
+
   color: #fff;
   box-shadow: 0 7px 20px rgba(108, 92, 231, .2);
 }
@@ -376,6 +503,100 @@ h1 span {
 .full {
   width: 100%;
 }
+
+/* ========================================
+   14. TOMBOL TEMA PREMIUM
+======================================== */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  padding: 8px 15px;
+  min-height: 48px;
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  background: linear-gradient(
+    135deg,
+    var(--surface-2),
+    var(--surface)
+  );
+
+  color: var(--text);
+
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: 0 5px 20px rgba(108, 92, 231, .15);
+
+  transition:
+    transform .2s,
+    box-shadow .2s,
+    background .3s;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 25px rgba(108, 92, 231, .25);
+}
+
+.theme-toggle:active {
+  transform: scale(.97);
+}
+
+.theme-icon {
+  display: grid;
+  place-items: center;
+
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+
+  border-radius: 11px;
+
+  background: linear-gradient(
+    135deg,
+    #8b7cff,
+    #6c5ce7
+  );
+
+  color: white;
+  font-size: 18px;
+
+  transition: transform .3s;
+}
+
+.theme-toggle:hover .theme-icon {
+  transform: rotate(15deg);
+}
+
+.theme-label {
+  white-space: nowrap;
+}
+
+/* Tombol tema dalam mode terang */
+body.light-theme .theme-toggle {
+  background: linear-gradient(
+    135deg,
+    #ffffff,
+    #eeeaff
+  );
+
+  color: #342c69;
+  border-color: #d8d0ff;
+}
+
+/* ========================================
+   15. PANEL PREVIEW
+======================================== */
 
 .preview-panel {
   position: sticky;
@@ -391,13 +612,16 @@ h1 span {
   align-items: center;
   justify-content: center;
   gap: 22px;
+
   margin-bottom: 18px;
 }
 
 .preview-controls span {
   min-width: 75px;
+
   text-align: center;
   color: var(--muted);
+
   font-size: 13px;
   font-weight: 700;
 }
@@ -405,46 +629,70 @@ h1 span {
 .icon-button {
   width: 38px;
   height: 38px;
+
   border: 1px solid var(--border);
   border-radius: 10px;
+
   background: var(--surface-2);
   color: var(--text);
+
   font-size: 20px;
 }
+
+/* ========================================
+   16. AREA PREVIEW
+======================================== */
 
 .preview-stage {
   display: grid;
   place-items: center;
+
   padding: 24px 12px;
+
   border: 1px dashed var(--border);
   border-radius: 15px;
+
   background:
-    radial-gradient(circle at 20% 20%, rgba(139, 124, 255, .09), transparent 45%),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(139, 124, 255, .09),
+      transparent 45%
+    ),
     var(--surface-2);
+
   overflow: hidden;
 }
 
 .paper-preview {
   width: min(100%, 360px);
   min-height: 460px;
+
   padding: 22px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
+
   border-radius: 3px;
+
   background: #fff;
   color: #182036;
+
   box-shadow: 0 12px 35px rgba(0, 0, 0, .2);
+
   text-align: center;
 }
 
 .paper-header,
 .paper-footer {
   width: 100%;
+
   display: flex;
   justify-content: space-between;
   gap: 10px;
+
   color: #727b8f;
+
   font-size: 8px;
   font-weight: 700;
   letter-spacing: .5px;
@@ -452,7 +700,9 @@ h1 span {
 
 .paper-preview h3 {
   margin: 28px 0 15px;
+
   color: #292b53;
+
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 20px;
   line-height: 1.35;
@@ -460,40 +710,55 @@ h1 span {
 
 .illustration {
   margin: 10px 0;
+
   font-size: 32px;
   letter-spacing: 8px;
 }
 
 .paper-preview > p {
   margin: 12px 0;
+
   color: #555d72;
   font-size: 11px;
 }
 
+/* ========================================
+   17. GAMBAR ILUSTRASI
+======================================== */
+
 .drawing-area {
   position: relative;
+
   width: 175px;
   height: 160px;
+
   margin: 12px auto 20px;
 }
 
 .drawing-circle {
   position: absolute;
+
   left: 30px;
   top: 25px;
+
   width: 115px;
   height: 115px;
+
   border: 3px solid #252b40;
   border-radius: 48% 48% 45% 45%;
 }
 
 .drawing-ear {
   position: absolute;
+
   top: 10px;
+
   width: 48px;
   height: 60px;
+
   border: 3px solid #252b40;
   border-radius: 50%;
+
   background: #fff;
 }
 
@@ -509,10 +774,13 @@ h1 span {
 
 .drawing-face {
   position: absolute;
+
   top: 72px;
   left: 0;
   right: 0;
+
   color: #252b40;
+
   font-size: 21px;
   font-weight: 700;
 }
@@ -520,15 +788,22 @@ h1 span {
 .paper-footer {
   margin-top: auto;
   padding-top: 16px;
+
   border-top: 1px solid #e5e7ee;
   color: #737b8e;
 }
+
+/* ========================================
+   18. STATUS PREVIEW
+======================================== */
 
 .preview-status {
   display: flex;
   align-items: center;
   gap: 8px;
+
   margin-top: 16px;
+
   color: var(--muted);
   font-size: 11px;
 }
@@ -536,7 +811,10 @@ h1 span {
 .live-dot {
   width: 8px;
   height: 8px;
+  flex-shrink: 0;
+
   border-radius: 50%;
+
   background: #45d6a3;
   box-shadow: 0 0 10px rgba(69, 214, 163, .4);
 }
@@ -544,16 +822,24 @@ h1 span {
 .paper-label {
   margin-left: auto;
   padding: 4px 9px;
+
   border-radius: 7px;
+
   background: var(--surface-2);
 }
+
+/* ========================================
+   19. PROGRESS DAN HASIL
+======================================== */
 
 .progress-box,
 .result-box {
   margin-top: 20px;
   padding: 16px;
+
   border: 1px solid var(--border);
   border-radius: 13px;
+
   background: var(--surface-2);
 }
 
@@ -565,6 +851,7 @@ h1 span {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+
   font-size: 12px;
 }
 
@@ -575,7 +862,9 @@ h1 span {
 .progress-track {
   height: 8px;
   margin-top: 12px;
+
   overflow: hidden;
+
   border-radius: 999px;
   background: var(--border);
 }
@@ -583,14 +872,22 @@ h1 span {
 #progressBar {
   width: 0;
   height: 100%;
+
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), var(--cyan));
+
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    var(--cyan)
+  );
+
   transition: width .2s;
 }
 
 .progress-box > p,
 .result-content p {
   margin: 10px 0 0;
+
   color: var(--muted);
   font-size: 11px;
 }
@@ -605,12 +902,16 @@ h1 span {
 .success-icon {
   width: 38px;
   height: 38px;
+  flex-shrink: 0;
+
   display: grid;
   place-items: center;
-  flex-shrink: 0;
+
   border-radius: 12px;
+
   background: rgba(69, 214, 163, .15);
   color: var(--green);
+
   font-size: 20px;
 }
 
@@ -626,18 +927,26 @@ h1 span {
   width: 100%;
 }
 
+/* ========================================
+   20. FEATURE CARDS
+======================================== */
+
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+
   margin: 40px 0;
 }
 
 .feature-card {
   padding: 22px;
+
   border: 1px solid var(--border);
   border-radius: 17px;
+
   background: var(--surface);
+
   transition: transform .2s, border-color .2s;
 }
 
@@ -649,12 +958,17 @@ h1 span {
 .feature-icon {
   width: 43px;
   height: 43px;
+
   display: grid;
   place-items: center;
+
   margin-bottom: 15px;
+
   border-radius: 13px;
+
   background: var(--surface-2);
   color: var(--primary);
+
   font-size: 22px;
 }
 
@@ -665,34 +979,54 @@ h1 span {
 
 .feature-card p {
   margin: 0;
+
   color: var(--muted);
   font-size: 12px;
   line-height: 1.8;
 }
 
+/* ========================================
+   21. FOOTER
+======================================== */
+
 footer {
   padding: 25px 0 35px;
+
   border-top: 1px solid var(--border);
+
   color: var(--muted);
   text-align: center;
+
   font-size: 12px;
 }
 
+/* ========================================
+   22. NOTIFIKASI TOAST
+======================================== */
+
 .toast {
   position: fixed;
+
   left: 50%;
   bottom: 24px;
   z-index: 99;
+
   max-width: 90%;
   padding: 12px 18px;
+
   border: 1px solid var(--border);
   border-radius: 12px;
+
   background: var(--surface);
   color: var(--text);
+
   box-shadow: var(--shadow);
+
   opacity: 0;
   pointer-events: none;
+
   transform: translate(-50%, 15px);
+
   transition: opacity .2s, transform .2s;
 }
 
@@ -700,6 +1034,10 @@ footer {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* ========================================
+   23. RESPONSIVE TABLET
+======================================== */
 
 @media (max-width: 900px) {
   .workspace {
@@ -714,6 +1052,10 @@ footer {
     padding-top: 50px;
   }
 }
+
+/* ========================================
+   24. RESPONSIVE HP
+======================================== */
 
 @media (max-width: 600px) {
   .topbar {
@@ -772,56 +1114,8 @@ footer {
   .result-box .button {
     width: 100%;
   }
-}
 
-@media print {
-  /* Tombol tema premium */
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 15px;
-  min-height: 48px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--surface-2), var(--surface));
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 5px 20px rgba(108, 92, 231, .15);
-  transition: transform .2s, box-shadow .2s, background .3s;
-}
-
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(108, 92, 231, .25);
-}
-
-.theme-icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, #8b7cff, #6c5ce7);
-  color: white;
-  font-size: 18px;
-  transition: transform .3s;
-}
-
-.theme-toggle:hover .theme-icon {
-  transform: rotate(15deg);
-}
-
-body.light-theme .theme-toggle {
-  background: linear-gradient(135deg, #ffffff, #eeeaff);
-  color: #342c69;
-  border-color: #d8d0ff;
-}
-
-@media (max-width: 600px) {
+  /* Tombol tema pada HP */
   .theme-toggle {
     gap: 6px;
     padding: 6px 9px;
@@ -832,8 +1126,15 @@ body.light-theme .theme-toggle {
   .theme-icon {
     width: 28px;
     height: 28px;
+    font-size: 16px;
   }
 }
+
+/* ========================================
+   25. MODE CETAK
+======================================== */
+
+@media print {
   .topbar,
   .settings,
   .preview-controls,
@@ -842,4 +1143,13 @@ body.light-theme .theme-toggle {
   footer {
     display: none !important;
   }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
   }
+
+  .card {
+    box-shadow: none;
+  }
+    }
