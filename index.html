@@ -9,20 +9,24 @@
 
   <link rel="stylesheet" href="style.css">
 
-  <!-- Library untuk membuat PDF -->
+  <!-- Library PDF gratis -->
   <script
     src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
     defer>
   </script>
 
+  <!-- Mesin utama -->
   <script src="tools.js" defer></script>
   <script src="app.js" defer></script>
-  <script src="vortex-integration.js"></script>
+
+  <!-- Integrasi Vortex -->
+  <script src="vortex-integration.js" defer></script>
 </head>
 
 <body>
 
   <header class="topbar">
+
     <a class="brand" href="#">
       <span class="brand-icon">✦</span>
 
@@ -32,14 +36,17 @@
       </span>
     </a>
 
-    <button id="themeBtn" class="button secondary">
+    <!-- ID disesuaikan dengan app.js -->
+    <button id="themeToggle" class="button secondary" type="button">
       ☼ Ganti Tema
     </button>
+
   </header>
 
   <main class="container">
 
     <section class="hero">
+
       <span class="eyebrow">CREATIVE WORKSPACE</span>
 
       <h1>
@@ -58,6 +65,7 @@
         <span>✓ Pengaturan fleksibel</span>
         <span>✓ Ekspor PDF</span>
       </div>
+
     </section>
 
     <section class="workspace">
@@ -67,12 +75,14 @@
       <aside class="card settings">
 
         <div class="section-heading">
+
           <span class="step">01</span>
 
           <div>
             <h2>Pengaturan Buku</h2>
             <p>Atur buku aktivitasmu.</p>
           </div>
+
         </div>
 
         <label for="bookTitle">Judul Buku</label>
@@ -88,6 +98,7 @@
         <div class="grid-two">
 
           <div>
+
             <label for="bookType">Jenis Aktivitas</label>
 
             <select id="bookType" class="input">
@@ -97,9 +108,11 @@
               <option value="puzzle">Teka-teki</option>
               <option value="mixed">Campuran</option>
             </select>
+
           </div>
 
           <div>
+
             <label for="paperSize">Ukuran Kertas</label>
 
             <select id="paperSize" class="input">
@@ -107,6 +120,7 @@
               <option value="letter">Letter</option>
               <option value="a5">A5</option>
             </select>
+
           </div>
 
         </div>
@@ -114,6 +128,7 @@
         <div class="grid-two">
 
           <div>
+
             <label for="pageCount">Jumlah Halaman</label>
 
             <input
@@ -124,9 +139,11 @@
               max="1000"
               value="20"
             >
+
           </div>
 
           <div>
+
             <label for="ageGroup">Usia Anak</label>
 
             <select id="ageGroup" class="input">
@@ -134,6 +151,7 @@
               <option value="6-8" selected>6–8 tahun</option>
               <option value="9-12">9–12 tahun</option>
             </select>
+
           </div>
 
         </div>
@@ -150,8 +168,11 @@
         </select>
 
         <div class="difficulty-heading">
+
           <label for="difficulty">Tingkat Kesulitan</label>
+
           <span id="difficultyValue">Mudah</span>
+
         </div>
 
         <input
@@ -170,24 +191,29 @@
         </div>
 
         <label class="check-option">
+
           <input type="checkbox" id="includeCover" checked>
 
           <span>
             <b>Sertakan Sampul</b>
             <small>Buat halaman depan buku.</small>
           </span>
+
         </label>
 
         <label class="check-option">
+
           <input type="checkbox" id="includeAnswers">
 
           <span>
             <b>Sertakan Kunci Jawaban</b>
             <small>Untuk soal matematika.</small>
           </span>
+
         </label>
 
         <div class="notice">
+
           <span>ⓘ</span>
 
           <p>
@@ -195,9 +221,14 @@
             Buku dengan ratusan halaman membutuhkan
             memori dan waktu lebih banyak.
           </p>
+
         </div>
 
-        <button id="generateBtn" class="button primary full">
+        <button
+          id="generateBtn"
+          class="button primary full"
+          type="button"
+        >
           ✦ Buat Buku PDF
           <span>↗</span>
         </button>
@@ -209,20 +240,33 @@
       <section class="card preview-panel">
 
         <div class="section-heading preview-heading">
+
           <span class="step">02</span>
 
           <div>
             <h2>Pratinjau Buku</h2>
             <p>Lihat rancangan halamanmu.</p>
           </div>
+
         </div>
 
         <div class="preview-controls">
-          <button id="prevBtn" class="icon-button">←</button>
+
+          <!-- ID disesuaikan dengan app.js -->
+          <button
+            id="prevPageBtn"
+            class="icon-button"
+            type="button"
+          >←</button>
 
           <span id="previewCounter">1 / 20</span>
 
-          <button id="nextBtn" class="icon-button">→</button>
+          <button
+            id="nextPageBtn"
+            class="icon-button"
+            type="button"
+          >→</button>
+
         </div>
 
         <div class="preview-stage">
@@ -268,16 +312,22 @@
         </div>
 
         <div class="preview-status">
+
           <span class="live-dot"></span>
           <span>Live Preview</span>
+
           <span class="paper-label" id="paperLabel">A4</span>
+
         </div>
 
         <div id="progressWrap" class="progress-box hidden">
 
           <div class="progress-heading">
+
             <b id="progressText">Menyiapkan PDF...</b>
+
             <span id="progressPercent">0%</span>
+
           </div>
 
           <div class="progress-track">
@@ -295,11 +345,18 @@
           <div class="success-icon">✓</div>
 
           <div class="result-content">
+
             <b>PDF berhasil dibuat!</b>
+
             <p id="resultText">File siap diunduh.</p>
+
           </div>
 
-          <button id="downloadBtn" class="button primary">
+          <button
+            id="downloadBtn"
+            class="button primary"
+            type="button"
+          >
             Unduh PDF ↓
           </button>
 
@@ -308,6 +365,8 @@
       </section>
 
     </section>
+
+    <!-- FITUR -->
 
     <section class="features">
 
@@ -340,4 +399,4 @@
   <div id="toast" class="toast"></div>
 
 </body>
-  </html>
+</html>
