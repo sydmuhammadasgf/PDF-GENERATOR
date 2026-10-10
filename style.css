@@ -775,6 +775,65 @@ footer {
 }
 
 @media print {
+  /* Tombol tema premium */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 15px;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(108, 92, 231, .15);
+  transition: transform .2s, box-shadow .2s, background .3s;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(108, 92, 231, .25);
+}
+
+.theme-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #8b7cff, #6c5ce7);
+  color: white;
+  font-size: 18px;
+  transition: transform .3s;
+}
+
+.theme-toggle:hover .theme-icon {
+  transform: rotate(15deg);
+}
+
+body.light-theme .theme-toggle {
+  background: linear-gradient(135deg, #ffffff, #eeeaff);
+  color: #342c69;
+  border-color: #d8d0ff;
+}
+
+@media (max-width: 600px) {
+  .theme-toggle {
+    gap: 6px;
+    padding: 6px 9px;
+    min-height: 42px;
+    font-size: 10px;
+  }
+
+  .theme-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
   .topbar,
   .settings,
   .preview-controls,
