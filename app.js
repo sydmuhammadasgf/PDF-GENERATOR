@@ -1,1154 +1,1429 @@
-/* =========================================
+/* =========================================================
    KIDSBOOK STUDIO — APP.JS
-   Generator buku aktivitas anak ke PDF
-   ========================================= */
+   Integrasi: tools.js + KidsBookTools + VortexAssistant
+   PDF: jsPDF 2.5.1
+   ========================================================= */
 
 "use strict";
 
-const $ = (id) => document.getElementById(id);
+(() => {
+  const $ = id => document.getElementById(id);
 
-const state = {
-  currentPage: 1,
-  totalPages: 20,
-  questions: [],
-  isGenerating: false,
-  pdfBlob: null,
-  pdfUrl: null
-};
-
-const themeNames = {
-  animals: "Hewan Lucu",
-  space: "Luar Angkasa",
-  ocean: "Dunia Laut",
-  garden: "Kebun Ajaib",
-  vehicles: "Kendaraan",
-  shapes: "Bentuk dan Benda"
-};
-
-const activities = {
-  coloring: {
-    name: "Buku Mewarnai",
-    instruction: "Warnai gambar sesuai imajinasimu!"
-  },
-  tracing: {
-    name: "Latihan Menulis",
-    instruction: "Ikuti garis dan tuliskan jawabanmu!"
-  },
-  math: {
-    name: "Matematika",
-    instruction: "Kerjakan soal berikut dengan teliti!"
-  },
-  puzzle: {
-    name: "Teka-teki",
-    instruction: "Amati petunjuk dan temukan jawabannya!"
-  },
-  mixed: {
-    name: "Aktivitas Campuran",
-    instruction: "Ayo belajar sambil bermain!"
-  }
-};
-
-/* =========================================
-   UTILITAS
-   ========================================= */
-
-function getSettings() {
-  return {
-    title: ($("bookTitle")?.value || "Petualangan Seru Anak").trim(),
-    type: $("bookType")?.value || "coloring",
-    paper: $("paperSize")?.value || "a4",
-    pages: Math.max(
-      1,
-      Math.min(1000, Number($("pageCount")?.value) || 20)
-    ),
-    age: $("ageGroup")?.value || "6-8",
-    theme: $("theme")?.value || "animals",
-    difficulty: Number($("difficulty")?.value || 1),
-    cover: $("includeCover")?.checked ?? true,
-    answers: $("includeAnswers")?.checked ?? false
+  const state = {
+    currentPage: 1,
+    totalPages: 0,
+    questions: [],
+    pagePlans: [],
+    isGenerating: false,
+    pdfBlob: null,
+    pdfUrl: null,
+    lastSettings: null
   };
-}
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function randomChoice(array) {
-  return array[randomInt(0, array.length - 1)];
-}
-
-function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
-
-function getPageType(settings, pageNumber) {
-  if (settings.type !== "mixed") {
-    return settings.type;
-  }
-
-  const types = ["coloring", "tracing", "math", "puzzle"];
-  return types[(pageNumber - 1) % types.length];
-}
-
-function getPageCount(settings) {
-  return settings.pages;
-}
-
-/* =========================================
-   BANK SOAL MATEMATIKA
-   ========================================= */
-
-function makeMathQuestion(settings, index) {
-  const age = settings.age;
-  const difficulty = settings.difficulty;
-
-  let max = age === "3-5" ? 10 : age === "6-8" ? 50 : 100;
-  max *= difficulty;
-
-  let a;
-  let b;
-  let operator;
-  let answer;
-
-  if (difficulty === 1 || age === "3-5") {
-    operator = randomChoice(["+", "-"]);
-
-    if (operator === "+") {
-      a = randomInt(0, Math.min(10, max));
-      b = randomInt(0, Math.min(10, max - a));
-      answer = a + b;
-    } else {
-      a = randomInt(1, Math.min(10, max));
-      b = randomInt(0, a);
-      answer = a - b;
-    }
-  } else {
-    operator = randomChoice(["+", "-", "×"]);
-
-    if (operator === "+") {
-      a = randomInt(1, max);
-      b = randomInt(1, max);
-      answer = a + b;
-    } else if (operator === "-") {
-      a = randomInt(1, max);
-      b = randomInt(0, a);
-      answer = a - b;
-    } else {
-      const multiplicationLimit = age === "6-8" ? 10 : 12;
-      a = randomInt(1, multiplicationLimit);
-      b = randomInt(1, multiplicationLimit);
-      answer = a * b;
-    }
-  }
-
-  return {
-    number: index + 1,
-    question: `${a} ${operator} ${b} = ....`,
-    answer
+  const THEME_NAMES = {
+    animals: "Hewan Lucu",
+    space: "Luar Angkasa",
+    ocean: "Dunia Laut",
+    garden: "Kebun Ajaib",
+    vegetables: "Sayuran",
+    fruits: "Buah-buahan",
+    professions: "Profesi",
+    vehicles: "Kendaraan",
+    shapes: "Bentuk Geometri",
+    dinosaurs: "Dinosaurus",
+    food: "Makanan",
+    home: "Rumah dan Keluarga",
+    weather: "Cuaca dan Alam"
   };
-}
 
-function makePuzzleQuestion(index) {
-  const puzzles = [
-    {
-      question: "Aku punya empat kaki, tetapi tidak bisa berjalan. Apakah aku?",
-      answer: "Meja"
-    },
-    {
-      question: "Benda apakah yang digunakan untuk melihat waktu?",
-      answer: "Jam"
-    },
-    {
-      question: "Apa yang muncul di langit setelah hujan dan terkena matahari?",
-      answer: "Pelangi"
-    },
-    {
-      question: "Aku bersinar pada malam hari dan terlihat di langit. Apakah aku?",
-      answer: "Bintang"
-    },
-    {
-      question: "Hewan apakah yang suka makan wortel dan memiliki telinga panjang?",
-      answer: "Kelinci"
-    },
-    {
-      question: "Apa yang digunakan untuk menulis di buku?",
-      answer: "Pensil"
-    },
-    {
-      question: "Aku hidup di air dan memiliki sirip. Siapakah aku?",
-      answer: "Ikan"
-    },
-    {
-      question: "Benda apakah yang melindungi kita ketika hujan?",
-      answer: "Payung"
-    }
+  const THEME_ICONS = {
+    animals: "🐻",
+    space: "🚀",
+    ocean: "🐠",
+    garden: "🌻",
+    vegetables: "🥕",
+    fruits: "🍎",
+    professions: "👩‍⚕️",
+    vehicles: "🚗",
+    shapes: "🔺",
+    dinosaurs: "🦖",
+    food: "🍞",
+    home: "🏠",
+    weather: "🌈"
+  };
+
+  const ACTIVITY_NAMES = {
+    coloring: "Buku Mewarnai",
+    tracing: "Latihan Menulis",
+    math: "Matematika",
+    puzzle: "Teka-teki",
+    mixed: "Aktivitas Campuran"
+  };
+
+  const ACTIVITY_ICONS = {
+    coloring: "🎨",
+    tracing: "✏️",
+    math: "🔢",
+    puzzle: "🧩",
+    mixed: "📚"
+  };
+
+  const PUZZLES = [
+    ["Aku punya empat kaki, tetapi tidak bisa berjalan. Apakah aku?", "Meja"],
+    ["Benda apakah yang digunakan untuk melihat waktu?", "Jam"],
+    ["Apa yang muncul di langit setelah hujan dan terkena matahari?", "Pelangi"],
+    ["Aku bersinar pada malam hari dan terlihat di langit. Apakah aku?", "Bintang"],
+    ["Hewan apakah yang suka makan wortel dan memiliki telinga panjang?", "Kelinci"],
+    ["Apa yang digunakan untuk menulis di buku?", "Pensil"],
+    ["Aku hidup di air dan memiliki sirip. Siapakah aku?", "Ikan"],
+    ["Benda apakah yang melindungi kita ketika hujan?", "Payung"],
+    ["Aku punya halaman, tetapi bukan rumah. Apakah aku?", "Buku"],
+    ["Buah apa yang berwarna kuning dan panjang?", "Pisang"],
+    ["Apa yang digunakan untuk membuka pintu terkunci?", "Kunci"],
+    ["Hewan apa yang menghasilkan madu?", "Lebah"],
+    ["Benda apakah yang digunakan untuk duduk?", "Kursi"],
+    ["Apa nama benda yang digunakan untuk menyikat gigi?", "Sikat gigi"],
+    ["Hewan apakah yang memiliki belalai panjang?", "Gajah"],
+    ["Apa yang kita gunakan untuk melindungi kepala dari panas?", "Topi"],
+    ["Benda apakah yang digunakan untuk memotong kertas?", "Gunting"],
+    ["Apa nama tempat kita meminjam dan membaca banyak buku?", "Perpustakaan"],
+    ["Hewan apakah yang menghasilkan susu?", "Sapi"],
+    ["Apa yang digunakan untuk membersihkan lantai?", "Sapu"]
   ];
 
-  return {
-    number: index + 1,
-    ...puzzles[index % puzzles.length]
-  };
-}
+  const MATH_OPERATIONS = ["+", "-", "×"];
 
-/* =========================================
-   ILUSTRASI VEKTOR
-   Tidak memerlukan API gambar.
-   ========================================= */
+  /* =========================================================
+     UTILITAS
+     ========================================================= */
 
-function drawIllustration(doc, settings, x, y, width, height, pageNumber) {
-  const cx = x + width / 2;
-  const cy = y + height / 2;
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 
-  doc.setDrawColor(35, 45, 60);
-  doc.setLineWidth(1.5);
+  function pick(array) {
+    return array[Math.floor(Math.random() * array.length)];
+  }
 
-  const theme = settings.theme;
+  function safeText(value, fallback = "") {
+    return value == null ? fallback : String(value);
+  }
 
-  if (theme === "space") {
-    // Planet
-    doc.circle(cx, cy, Math.min(width, height) * 0.19, "S");
-    doc.ellipse(
-      cx,
-      cy,
-      width * 0.34,
-      height * 0.10,
-      "S"
-    );
+  function wrapText(doc, text, maxWidth) {
+    return doc.splitTextToSize(String(text), maxWidth);
+  }
 
-    doc.circle(cx - width * 0.28, cy - height * 0.28, 3, "S");
-    doc.circle(cx + width * 0.29, cy + height * 0.25, 2, "S");
-    doc.circle(cx + width * 0.20, cy - height * 0.34, 2, "S");
-
-  } else if (theme === "ocean") {
-    // Ikan sederhana
-    doc.ellipse(cx, cy, width * 0.23, height * 0.15, "S");
-
-    doc.triangle(
-      cx - width * 0.23,
-      cy,
-      cx - width * 0.36,
-      cy - height * 0.12,
-      cx - width * 0.36,
-      cy + height * 0.12,
-      "S"
-    );
-
-    doc.circle(cx + width * 0.13, cy - height * 0.02, 2, "S");
-
-    doc.arc(
-      cx,
-      cy + height * 0.35,
-      width * 0.10,
-      0,
-      180,
-      "S"
-    );
-
-  } else if (theme === "vehicles") {
-    // Mobil
-    doc.roundedRect(
-      cx - width * 0.30,
-      cy - height * 0.08,
-      width * 0.60,
-      height * 0.20,
-      5,
-      5,
-      "S"
-    );
-
-    doc.line(
-      cx - width * 0.18,
-      cy - height * 0.08,
-      cx - width * 0.08,
-      cy - height * 0.20
-    );
-
-    doc.line(
-      cx - width * 0.08,
-      cy - height * 0.20,
-      cx + width * 0.12,
-      cy - height * 0.20
-    );
-
-    doc.line(
-      cx + width * 0.12,
-      cy - height * 0.20,
-      cx + width * 0.22,
-      cy - height * 0.08
-    );
-
-    doc.circle(cx - width * 0.18, cy + height * 0.13, 5, "S");
-    doc.circle(cx + width * 0.18, cy + height * 0.13, 5, "S");
-
-  } else if (theme === "garden") {
-    // Bunga
-    const r = Math.min(width, height) * 0.10;
-
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI * 2 * i) / 6;
-      doc.circle(
-        cx + Math.cos(angle) * r * 1.3,
-        cy + Math.sin(angle) * r * 1.3,
-        r,
-        "S"
-      );
+  function getJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) {
+      return window.jspdf.jsPDF;
     }
 
-    doc.circle(cx, cy, r, "S");
-    doc.line(cx, cy + r, cx, cy + height * 0.28);
-    doc.ellipse(
-      cx + width * 0.10,
-      cy + height * 0.20,
-      width * 0.10,
-      height * 0.04,
-      "S"
-    );
-
-  } else if (theme === "shapes") {
-    // Bentuk geometri
-    doc.circle(cx - width * 0.18, cy, width * 0.10, "S");
-
-    doc.rect(
-      cx + width * 0.06,
-      cy - height * 0.10,
-      width * 0.20,
-      width * 0.20,
-      "S"
-    );
-
-    doc.triangle(
-      cx,
-      cy + height * 0.30,
-      cx - width * 0.13,
-      cy + height * 0.50,
-      cx + width * 0.13,
-      cy + height * 0.50,
-      "S"
-    );
-
-  } else {
-    // Wajah hewan sederhana
-    const r = Math.min(width, height) * 0.22;
-
-    doc.circle(cx, cy, r, "S");
-
-    doc.circle(
-      cx - r * 0.70,
-      cy - r * 0.85,
-      r * 0.45,
-      "S"
-    );
-
-    doc.circle(
-      cx + r * 0.70,
-      cy - r * 0.85,
-      r * 0.45,
-      "S"
-    );
-
-    doc.circle(cx - r * 0.35, cy - r * 0.10, 2, "S");
-    doc.circle(cx + r * 0.35, cy - r * 0.10, 2, "S");
-
-    doc.line(
-      cx - r * 0.20,
-      cy + r * 0.30,
-      cx + r * 0.20,
-      cy + r * 0.30
+    throw new Error(
+      "jsPDF belum dimuat. Periksa urutan script di index.html."
     );
   }
 
-  // Ornamen kecil
-  doc.setLineWidth(0.7);
-  doc.circle(x + width * 0.12, y + height * 0.15, 3, "S");
-  doc.circle(x + width * 0.85, y + height * 0.80, 4, "S");
-}
-
-/* =========================================
-   KONTEN HALAMAN PDF
-   ========================================= */
-
-function drawPageHeader(doc, settings, pageNumber, pageWidth) {
-  doc.setTextColor(40, 50, 65);
-  doc.setDrawColor(190, 200, 210);
-  doc.setLineWidth(0.5);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-
-  doc.text("KIDSBOOK STUDIO", 15, 13);
-  doc.text("AKTIVITAS ANAK", pageWidth - 15, 13, {
-    align: "right"
-  });
-
-  doc.line(15, 17, pageWidth - 15, 17);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Nama: __________________________", 15, 25);
-
-  doc.text(`Halaman ${pageNumber}`, pageWidth - 15, 25, {
-    align: "right"
-  });
-}
-
-function drawCover(doc, settings, pageWidth, pageHeight) {
-  doc.setDrawColor(50, 70, 100);
-  doc.setLineWidth(2);
-
-  doc.roundedRect(
-    12,
-    12,
-    pageWidth - 24,
-    pageHeight - 24,
-    6,
-    6,
-    "S"
-  );
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(45, 65, 95);
-
-  doc.text("KIDSBOOK STUDIO", pageWidth / 2, 35, {
-    align: "center"
-  });
-
-  doc.setFontSize(25);
-
-  const titleLines = doc.splitTextToSize(
-    settings.title || "Petualangan Seru Anak",
-    pageWidth - 35
-  );
-
-  doc.text(titleLines, pageWidth / 2, pageHeight * 0.25, {
-    align: "center"
-  });
-
-  drawIllustration(
-    doc,
-    settings,
-    pageWidth * 0.18,
-    pageHeight * 0.36,
-    pageWidth * 0.64,
-    pageHeight * 0.32,
-    1
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-
-  doc.text(
-    activities[settings.type]?.name || "Buku Aktivitas",
-    pageWidth / 2,
-    pageHeight * 0.78,
-    { align: "center" }
-  );
-
-  doc.setFontSize(11);
-
-  doc.text(
-    `Usia ${settings.age} tahun`,
-    pageWidth / 2,
-    pageHeight * 0.83,
-    { align: "center" }
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    "Belajar, berkreasi, dan bermain!",
-    pageWidth / 2,
-    pageHeight * 0.89,
-    { align: "center" }
-  );
-}
-
-function drawColoringPage(doc, settings, pageWidth, pageHeight, pageNumber) {
-  drawPageHeader(doc, settings, pageNumber, pageWidth);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
-
-  doc.text(
-    "Ayo Mewarnai!",
-    pageWidth / 2,
-    42,
-    { align: "center" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-
-  doc.text(
-    `Tema: ${themeNames[settings.theme] || "Hewan Lucu"}`,
-    pageWidth / 2,
-    51,
-    { align: "center" }
-  );
-
-  const margin = 20;
-
-  drawIllustration(
-    doc,
-    settings,
-    margin,
-    65,
-    pageWidth - margin * 2,
-    pageHeight * 0.52,
-    pageNumber
-  );
-
-  doc.setFontSize(11);
-
-  doc.text(
-    "Gunakan warna favoritmu!",
-    pageWidth / 2,
-    pageHeight * 0.75,
-    { align: "center" }
-  );
-
-  doc.setDrawColor(180, 190, 200);
-
-  doc.roundedRect(
-    margin,
-    pageHeight * 0.80,
-    pageWidth - margin * 2,
-    pageHeight * 0.10,
-    3,
-    3,
-    "S"
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    "Warna yang saya pilih:",
-    margin + 5,
-    pageHeight * 0.84
-  );
-
-  doc.line(
-    margin + 5,
-    pageHeight * 0.87,
-    pageWidth - margin - 5,
-    pageHeight * 0.87
-  );
-}
-
-function drawTracingPage(doc, settings, pageWidth, pageHeight, pageNumber) {
-  drawPageHeader(doc, settings, pageNumber, pageWidth);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
-
-  doc.text(
-    "Ayo Berlatih Menulis!",
-    pageWidth / 2,
-    43,
-    { align: "center" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-
-  doc.text(
-    "Tebalkan huruf atau kata berikut.",
-    pageWidth / 2,
-    53,
-    { align: "center" }
-  );
-
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const letter = letters[(pageNumber - 1) % letters.length];
-
-  doc.setTextColor(210, 210, 210);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(65);
-
-  doc.text(
-    letter,
-    pageWidth / 2,
-    pageHeight * 0.34,
-    { align: "center" }
-  );
-
-  doc.setTextColor(50, 60, 75);
-  doc.setFontSize(13);
-
-  doc.text(
-    `Huruf ${letter}`,
-    pageWidth / 2,
-    pageHeight * 0.43,
-    { align: "center" }
-  );
-
-  for (let i = 0; i < 5; i++) {
-    const y = pageHeight * 0.52 + i * 18;
-
-    doc.setDrawColor(180, 190, 200);
-    doc.setLineDashPattern([2, 2], 0);
-
-    doc.line(20, y, pageWidth - 20, y);
-
-    doc.setLineDashPattern([], 0);
-  }
-
-  doc.setFontSize(11);
-
-  doc.text(
-    "Tuliskan hurufmu dengan rapi.",
-    pageWidth / 2,
-    pageHeight * 0.82,
-    { align: "center" }
-  );
-}
-
-function drawMathPage(doc, settings, pageWidth, pageHeight, pageNumber) {
-  drawPageHeader(doc, settings, pageNumber, pageWidth);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
-
-  doc.text(
-    "Ayo Berhitung!",
-    pageWidth / 2,
-    43,
-    { align: "center" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-
-  doc.text(
-    "Kerjakan soal berikut.",
-    pageWidth / 2,
-    53,
-    { align: "center" }
-  );
-
-  const questions = [];
-
-  for (let i = 0; i < 8; i++) {
-    questions.push(makeMathQuestion(settings, i));
-  }
-
-  state.questions[pageNumber] = questions;
-
-  const startY = 75;
-  const gap = Math.min(24, (pageHeight - 110) / questions.length);
-
-  doc.setFontSize(14);
-
-  questions.forEach((q, index) => {
-    const y = startY + index * gap;
-
-    doc.text(`${index + 1}.  ${q.question}`, 22, y);
-
-    doc.setDrawColor(180, 190, 200);
-    doc.line(pageWidth - 48, y + 2, pageWidth - 22, y + 2);
-  });
-
-  doc.setFontSize(10);
-
-  doc.text(
-    "Periksa kembali jawabanmu!",
-    pageWidth / 2,
-    pageHeight - 22,
-    { align: "center" }
-  );
-}
-
-function drawPuzzlePage(doc, settings, pageWidth, pageHeight, pageNumber) {
-  drawPageHeader(doc, settings, pageNumber, pageWidth);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
-
-  doc.text(
-    "Teka-teki Seru!",
-    pageWidth / 2,
-    43,
-    { align: "center" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-
-  doc.text(
-    "Baca pertanyaan dan tuliskan jawabanmu.",
-    pageWidth / 2,
-    53,
-    { align: "center" }
-  );
-
-  const puzzles = [];
-
-  for (let i = 0; i < 4; i++) {
-    puzzles.push(makePuzzleQuestion(pageNumber + i));
-  }
-
-  state.questions[pageNumber] = puzzles;
-
-  let y = 82;
-
-  puzzles.forEach((puzzle, index) => {
-    const lines = doc.splitTextToSize(
-      `${index + 1}. ${puzzle.question}`,
-      pageWidth - 45
-    );
-
-    doc.text(lines, 22, y);
-
-    y += lines.length * 6 + 10;
-
-    doc.setDrawColor(180, 190, 200);
-    doc.line(22, y, pageWidth - 22, y);
-
-    y += 23;
-  });
-}
-
-/* =========================================
-   KUNCI JAWABAN
-   ========================================= */
-
-function drawAnswerPages(doc, settings, pageWidth, pageHeight) {
-  if (!settings.answers || settings.type === "coloring" ||
-      settings.type === "tracing") {
-    return;
-  }
-
-  const answerEntries = Object.entries(state.questions);
-
-  if (answerEntries.length === 0) {
-    return;
-  }
-
-  doc.addPage();
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-
-  doc.text(
-    "KUNCI JAWABAN",
-    pageWidth / 2,
-    25,
-    { align: "center" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  let y = 40;
-
-  for (const [pageNumber, items] of answerEntries) {
-    if (y > pageHeight - 20) {
-      doc.addPage();
-      y = 25;
-    }
-
-    doc.setFont("helvetica", "bold");
-
-    doc.text(`Halaman aktivitas ${pageNumber}`, 15, y);
-
-    doc.setFont("helvetica", "normal");
-
-    y += 7;
-
-    items.forEach((item, index) => {
-      const answer = item.answer;
-
-      const text = answer !== undefined
-        ? `${index + 1}. ${answer}`
-        : `${index + 1}. ${item.question} — ${item.answer}`;
-
-      doc.text(text, 20, y);
-
-      y += 6;
-
-      if (y > pageHeight - 20) {
-        doc.addPage();
-        y = 25;
-      }
-    });
-
-    y += 5;
-  }
-}
-
-/* =========================================
-   PRATINJAU WEBSITE
-   ========================================= */
-
-function updatePreview() {
-  const settings = getSettings();
-
-  state.totalPages = getPageCount(settings);
-
-  state.currentPage = Math.min(
-    Math.max(1, state.currentPage),
-    state.totalPages
-  );
-
-  const pageType = getPageType(settings, state.currentPage);
-
-  if ($("previewTitle")) {
-    $("previewTitle").textContent =
-      state.currentPage === 1 && settings.cover
-        ? settings.title
-        : activities[pageType]?.name || settings.title;
-  }
-
-  if ($("previewInstruction")) {
-    $("previewInstruction").textContent =
-      activities[pageType]?.instruction || "";
-  }
-
-  if ($("previewCounter")) {
-    $("previewCounter").textContent =
-      `${state.currentPage} / ${state.totalPages}`;
-  }
-
-  if ($("previewPageNo")) {
-    $("previewPageNo").textContent = state.currentPage;
-  }
-
-  if ($("paperLabel")) {
-    $("paperLabel").textContent = settings.paper.toUpperCase();
-  }
-
-  if ($("previewIllustration")) {
-    const icons = {
-      animals: "🐻 🐰 🐱",
-      space: "🚀 🪐 ⭐",
-      ocean: "🐠 🐙 🐬",
-      garden: "🌷 🌻 🦋",
-      vehicles: "🚗 🚂 🚀",
-      shapes: "○ △ □ ◇"
+  function getPageSize(doc) {
+    return {
+      width: doc.internal.pageSize.getWidth(),
+      height: doc.internal.pageSize.getHeight()
     };
-
-    $("previewIllustration").textContent =
-      icons[settings.theme] || "🐻 ✿ ☁";
   }
 
-  const difficultyNames = {
-    1: "Mudah",
-    2: "Sedang",
-    3: "Menantang"
-  };
-
-  if ($("difficultyValue")) {
-    $("difficultyValue").textContent =
-      difficultyNames[settings.difficulty] || "Mudah";
+  function getMargin(doc) {
+    const size = getPageSize(doc);
+    return Math.min(15, size.width * 0.055);
   }
 
-  // Penyesuaian pratinjau untuk A4, A5, dan Letter
-  const preview = $("pagePreview");
-
-  if (preview) {
-    preview.style.aspectRatio =
-      settings.paper === "a5"
-        ? "148 / 210"
-        : settings.paper === "letter"
-          ? "8.5 / 11"
-          : "210 / 297";
-  }
-}
-
-/* =========================================
-   PROGRESS
-   ========================================= */
-
-function setProgress(percent, message) {
-  if ($("progressWrap")) {
-    $("progressWrap").classList.remove("hidden");
-  }
-
-  if ($("progressPercent")) {
-    $("progressPercent").textContent = `${percent}%`;
-  }
-
-  if ($("progressText")) {
-    $("progressText").textContent = message;
-  }
-
-  if ($("progressBar")) {
-    $("progressBar").style.width = `${percent}%`;
-  }
-}
-
-function showToast(message) {
-  const toast = $("toast");
-
-  if (!toast) {
-    alert(message);
-    return;
-  }
-
-  toast.textContent = message;
-  toast.classList.add("show");
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 3000);
-}
-
-/* =========================================
-   GENERATOR PDF
-   ========================================= */
-
-function getPaperFormat(paper) {
-  if (paper === "a5") return "a5";
-  if (paper === "letter") return "letter";
-  return "a4";
-}
-
-function drawActivityPage(doc, settings, pageNumber) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  const type = getPageType(settings, pageNumber);
-
-  if (type === "coloring") {
-    drawColoringPage(doc, settings, pageWidth, pageHeight, pageNumber);
-  } else if (type === "tracing") {
-    drawTracingPage(doc, settings, pageWidth, pageHeight, pageNumber);
-  } else if (type === "math") {
-    drawMathPage(doc, settings, pageWidth, pageHeight, pageNumber);
-  } else if (type === "puzzle") {
-    drawPuzzlePage(doc, settings, pageWidth, pageHeight, pageNumber);
-  }
-}
-
-async function generatePDF() {
-  if (state.isGenerating) return;
-
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    showToast("Library PDF belum termuat. Periksa koneksi internet.");
-    return;
-  }
-
-  const settings = getSettings();
-
-  if (!settings.title) {
-    showToast("Masukkan judul buku terlebih dahulu.");
-    $("bookTitle")?.focus();
-    return;
-  }
-
-  state.isGenerating = true;
-  state.questions = [];
-
-  if ($("generateBtn")) {
-    $("generateBtn").disabled = true;
-    $("generateBtn").textContent = "Sedang Membuat PDF...";
-  }
-
-  if ($("resultBox")) {
-    $("resultBox").classList.add("hidden");
-  }
-
-  if ($("progressWrap")) {
-    $("progressWrap").classList.remove("hidden");
-  }
-
-  try {
-    const { jsPDF } = window.jspdf;
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: getPaperFormat(settings.paper),
-      compress: true
-    });
-
-    const total = settings.pages;
-    const batchSize = 10;
-
-    for (let start = 1; start <= total; start += batchSize) {
-      const end = Math.min(total, start + batchSize - 1);
-
-      for (let page = start; page <= end; page++) {
-        if (page > 1 || settings.cover) {
-          doc.addPage();
-        }
-
-        if (page === 1 && settings.cover) {
-          const width = doc.internal.pageSize.getWidth();
-          const height = doc.internal.pageSize.getHeight();
-
-          drawCover(doc, settings, width, height);
-        } else {
-          drawActivityPage(doc, settings, page);
-        }
-      }
-
-      const percent = Math.round((end / total) * 100);
-
-      setProgress(
-        percent,
-        `Membuat halaman ${end} dari ${total}...`
-      );
-
-      // Beri browser waktu agar tetap responsif
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-
-    drawAnswerPages(
-      doc,
-      settings,
-      doc.internal.pageSize.getWidth(),
-      doc.internal.pageSize.getHeight()
-    );
-
-    setProgress(100, "Menyiapkan file PDF...");
-
-    const blob = doc.output("blob");
-
+  function cleanPreviousPDF() {
     if (state.pdfUrl) {
       URL.revokeObjectURL(state.pdfUrl);
     }
 
-    state.pdfBlob = blob;
-    state.pdfUrl = URL.createObjectURL(blob);
+    state.pdfUrl = null;
+    state.pdfBlob = null;
+  }
 
-    const fileName = settings.title
-      .replace(/[\\/:*?"<>|]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .slice(0, 80) || "kidsbook";
+  function showToast(message, type = "info") {
+    const toast = $("toast");
 
-    const downloadBtn = $("downloadBtn");
+    if (!toast) {
+      console.log(`[${type}] ${message}`);
+      return;
+    }
 
-    if (downloadBtn) {
-      downloadBtn.onclick = () => {
-        const link = document.createElement("a");
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    toast.classList.remove("hidden");
 
-        link.href = state.pdfUrl;
-        link.download = `${fileName}.pdf`;
+    clearTimeout(showToast.timer);
 
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+    showToast.timer = setTimeout(() => {
+      toast.classList.add("hidden");
+    }, 3500);
+  }
+
+  function setProgress(percent, message) {
+    const bar = $("progressBar");
+    const text = $("progressText");
+    const container = $("progressContainer");
+
+    if (container) {
+      container.classList.remove("hidden");
+    }
+
+    if (bar) {
+      bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    }
+
+    if (text) {
+      text.textContent = message || `${percent}%`;
+    }
+  }
+
+  function hideProgress() {
+    const container = $("progressContainer");
+
+    if (container) {
+      container.classList.add("hidden");
+    }
+  }
+
+  /* =========================================================
+     PENGATURAN
+     ========================================================= */
+
+  function getSettings() {
+    const type = $("bookType")?.value || "coloring";
+    const requestedPages = parseInt($("pageCount")?.value, 10) || 10;
+
+    const themeValue = $("theme")?.value || "animals";
+    const theme = THEME_NAMES[themeValue] ? themeValue : "animals";
+
+    const paperSize = $("paperSize")?.value || "a4";
+    const age = $("ageGroup")?.value || "6-8";
+
+    let difficulty = parseInt($("difficulty")?.value, 10) || 1;
+    difficulty = Math.max(1, Math.min(3, difficulty));
+
+    return {
+      title: safeText($("bookTitle")?.value, "Buku Aktivitas Anak"),
+      type,
+      theme,
+      paperSize: paperSize.toLowerCase(),
+      pages: Math.max(1, Math.min(1000, requestedPages)),
+      age,
+      difficulty,
+      cover: $("includeCover") ? $("includeCover").checked : true,
+      answers: $("includeAnswers") ? $("includeAnswers").checked : true
+    };
+  }
+
+  function getPageType(settings, pageNumber) {
+    if (settings.type !== "mixed") {
+      return settings.type;
+    }
+
+    const types = ["coloring", "tracing", "math", "puzzle"];
+    return types[(pageNumber - 1) % types.length];
+  }
+
+  function getPagePlan(settings, pageNumber, bookSet) {
+    const tools = window.KidsBookTools;
+
+    if (!tools || typeof tools.createPagePlan !== "function") {
+      return null;
+    }
+
+    try {
+      const planSettings = {
+        theme: settings.theme,
+        type: getPageType(settings, pageNumber),
+        age: settings.age,
+        difficulty: settings.difficulty,
+        pages: settings.pages
       };
-    }
 
-    if ($("resultText")) {
-      $("resultText").textContent =
-        `Buku selesai dibuat: ${total} halaman aktivitas` +
-        `${settings.cover ? " dan sampul" : ""}.`;
-    }
-
-    if ($("resultBox")) {
-      $("resultBox").classList.remove("hidden");
-    }
-
-    showToast("PDF berhasil dibuat!");
-
-    setProgress(100, "Selesai! PDF siap diunduh.");
-
-  } catch (error) {
-    console.error("Kesalahan generator PDF:", error);
-
-    showToast(
-      "PDF gagal dibuat. Coba kurangi jumlah halaman."
-    );
-
-    setProgress(0, "Terjadi kesalahan saat membuat PDF.");
-
-  } finally {
-    state.isGenerating = false;
-
-    if ($("generateBtn")) {
-      $("generateBtn").disabled = false;
-      $("generateBtn").innerHTML =
-        '✦ Buat Buku PDF <span>↗</span>';
+      return tools.createPagePlan(planSettings, pageNumber, bookSet);
+    } catch (error) {
+      console.warn("Vortex gagal membuat rencana halaman:", error);
+      return null;
     }
   }
-}
 
-/* =========================================
-   EVENT LISTENER
-   ========================================= */
+  /* =========================================================
+     GAMBAR DASAR
+     ========================================================= */
 
-function setupEvents() {
-  const settingIds = [
-    "bookTitle",
-    "bookType",
-    "paperSize",
-    "pageCount",
-    "ageGroup",
-    "theme",
-    "difficulty",
-    "includeCover",
-    "includeAnswers"
-  ];
+  function drawPageBorder(doc, margin, width, height) {
+    doc.setDrawColor(190, 198, 208);
+    doc.setLineWidth(0.5);
 
-  settingIds.forEach((id) => {
-    const element = $(id);
-
-    if (!element) return;
-
-    element.addEventListener("input", updatePreview);
-    element.addEventListener("change", updatePreview);
-  });
-
-  $("generateBtn")?.addEventListener("click", generatePDF);
-
-  $("prevBtn")?.addEventListener("click", () => {
-    state.currentPage = Math.max(1, state.currentPage - 1);
-    updatePreview();
-  });
-
-  $("nextBtn")?.addEventListener("click", () => {
-    state.currentPage = Math.min(
-      state.totalPages,
-      state.currentPage + 1
+    doc.roundedRect(
+      margin,
+      margin,
+      width - margin * 2,
+      height - margin * 2,
+      3,
+      3,
+      "S"
     );
-
-    updatePreview();
-  });
-
-  $("themeBtn")?.addEventListener("click", () => {
-    document.body.classList.toggle("light-mode");
-
-    const isLight = document.body.classList.contains("light-mode");
-
-    localStorage.setItem(
-      "kidsbook-theme",
-      isLight ? "light" : "dark"
-    );
-  });
-}
-
-/* =========================================
-   MULAI APLIKASI
-   ========================================= */
-
-function initKidsBookStudio() {
-  const savedTheme = localStorage.getItem("kidsbook-theme");
-
-  if (savedTheme === "light") {
-    document.body.classList.add("light-mode");
   }
 
-  setupEvents();
-  updatePreview();
+  function drawPageHeader(doc, settings, pageNumber, activityType) {
+    const { width } = getPageSize(doc);
+    const margin = getMargin(doc);
 
-  console.log("KidsBook Studio siap digunakan.");
-}
+    doc.setTextColor(35, 45, 60);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
 
-if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    initKidsBookStudio
-  );
-} else {
-  initKidsBookStudio();
+    doc.text(settings.title.slice(0, 70), margin + 2, margin + 8);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+
+    const label =
+      `${THEME_ICONS[settings.theme] || ""} ` +
+      `${THEME_NAMES[settings.theme] || "Aktivitas"} • ` +
+      `${ACTIVITY_NAMES[activityType] || activityType}`;
+
+    doc.text(label, margin + 2, margin + 14);
+
+    doc.setDrawColor(200, 205, 215);
+    doc.line(
+      margin,
+      margin + 19,
+      width - margin,
+      margin + 19
+    );
+
+    doc.setFontSize(8);
+    doc.text(
+      `Halaman ${pageNumber}`,
+      width - margin - 2,
+      margin + 8,
+      { align: "right" }
+    );
+  }
+
+  function drawFooter(doc, pageNumber) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    doc.setDrawColor(220, 220, 220);
+    doc.line(
+      margin + 2,
+      height - margin - 9,
+      width - margin - 2,
+      height - margin - 9
+    );
+
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+
+    doc.text(
+      `KidsBook Studio • ${pageNumber}`,
+      width / 2,
+      height - margin - 4,
+      { align: "center" }
+    );
+
+    doc.setTextColor(0, 0, 0);
+  }
+
+  function drawInstruction(doc, text, x, y, maxWidth) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+
+    const lines = wrapText(doc, text, maxWidth);
+
+    doc.text(lines, x, y);
+
+    return lines.length * 5 + 4;
+  }
+
+  /* =========================================================
+     INTEGRASI ILUSTRASI VORTEX
+     ========================================================= */
+
+  function drawIllustration(doc, settings, x, y, width, height, pageNumber) {
+    const tools = window.KidsBookTools;
+
+    const plan =
+      state.pagePlans[pageNumber - 1] ||
+      getPagePlan(settings, pageNumber, new Set());
+
+    if (
+      tools &&
+      tools.VectorIllustrator &&
+      typeof tools.VectorIllustrator.draw === "function"
+    ) {
+      try {
+        const item = plan || {
+          theme: settings.theme,
+          activity: getPageType(settings, pageNumber)
+        };
+
+        tools.VectorIllustrator.draw(
+          doc,
+          item,
+          x,
+          y,
+          width,
+          height,
+          pageNumber
+        );
+
+        return;
+      } catch (error) {
+        console.warn("Ilustrasi Vortex gagal:", error);
+      }
     }
+
+    // Fallback jika tools.js tidak tersedia.
+    drawFallbackIllustration(
+      doc,
+      settings.theme,
+      x,
+      y,
+      width,
+      height,
+      pageNumber
+    );
+  }
+
+  function drawFallbackIllustration(
+    doc,
+    theme,
+    x,
+    y,
+    width,
+    height,
+    pageNumber
+  ) {
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const unit = Math.min(width, height) * 0.24;
+
+    doc.setDrawColor(35, 45, 60);
+    doc.setLineWidth(1.4);
+
+    if (theme === "space") {
+      doc.circle(cx, cy, unit * 0.65, "S");
+      doc.ellipse(cx, cy, unit * 1.1, unit * 0.35, "S");
+      doc.circle(cx + unit * 0.8, cy - unit * 0.5, unit * 0.12, "S");
+      doc.circle(cx - unit * 1.1, cy - unit * 0.9, unit * 0.07, "S");
+      doc.circle(cx + unit * 1.1, cy + unit * 0.9, unit * 0.07, "S");
+    } else if (theme === "ocean") {
+      doc.ellipse(cx, cy, unit * 0.9, unit * 0.55, "S");
+      doc.triangle(
+        cx - unit * 0.8, cy,
+        cx - unit * 1.2, cy - unit * 0.3,
+        cx - unit * 1.2, cy + unit * 0.3,
+        "S"
+      );
+      doc.circle(cx + unit * 0.5, cy - unit * 0.1, unit * 0.05, "S");
+      doc.arc(cx + unit * 0.1, cy + unit * 0.1, unit * 0.2, 20, 150, "S");
+    } else if (theme === "garden" || theme === "fruits") {
+      doc.circle(cx, cy, unit * 0.55, "S");
+      doc.ellipse(cx + unit * 0.3, cy - unit * 0.6, unit * 0.25, unit * 0.12, "S");
+      doc.line(cx, cy - unit * 0.5, cx, cy - unit * 0.9);
+      doc.line(cx - unit * 0.8, cy + unit * 0.8, cx + unit * 0.8, cy + unit * 0.8);
+    } else if (theme === "vehicles") {
+      doc.roundedRect(
+        cx - unit,
+        cy - unit * 0.2,
+        unit * 2,
+        unit * 0.7,
+        4,
+        4,
+        "S"
+      );
+      doc.circle(cx - unit * 0.55, cy + unit * 0.6, unit * 0.2, "S");
+      doc.circle(cx + unit * 0.55, cy + unit * 0.6, unit * 0.2, "S");
+      doc.line(cx - unit * 0.4, cy - unit * 0.2, cx - unit * 0.15, cy - unit * 0.6);
+      doc.line(cx - unit * 0.15, cy - unit * 0.6, cx + unit * 0.4, cy - unit * 0.6);
+    } else if (theme === "shapes") {
+      doc.circle(cx - unit * 0.65, cy, unit * 0.35, "S");
+      doc.rect(cx, cy - unit * 0.35, unit * 0.7, unit * 0.7, "S");
+      doc.triangle(
+        cx - unit * 0.1, cy + unit * 0.5,
+        cx - unit * 0.6, cy + unit * 1.2,
+        cx + unit * 0.4, cy + unit * 1.2,
+        "S"
+      );
+    } else if (theme === "dinosaurs") {
+      doc.ellipse(cx, cy, unit * 0.9, unit * 0.5, "S");
+      doc.circle(cx + unit * 0.75, cy - unit * 0.55, unit * 0.3, "S");
+      doc.line(cx - unit * 0.45, cy + unit * 0.3, cx - unit * 0.5, cy + unit * 0.9);
+      doc.line(cx + unit * 0.3, cy + unit * 0.3, cx + unit * 0.4, cy + unit * 0.9);
+      doc.triangle(
+        cx - unit * 0.8, cy,
+        cx - unit * 1.35, cy - unit * 0.3,
+        cx - unit * 1.1, cy + unit * 0.3,
+        "S"
+      );
+    } else if (theme === "weather") {
+      doc.circle(cx - unit * 0.2, cy, unit * 0.35, "S");
+      doc.circle(cx + unit * 0.2, cy - unit * 0.15, unit * 0.45, "S");
+      doc.circle(cx + unit * 0.55, cy, unit * 0.3, "S");
+      doc.line(cx - unit * 0.5, cy + unit * 0.3, cx + unit * 0.8, cy + unit * 0.3);
+      doc.line(cx - unit * 0.2, cy + unit * 0.5, cx - unit * 0.3, cy + unit * 0.8);
+      doc.line(cx + unit * 0.3, cy + unit * 0.5, cx + unit * 0.2, cy + unit * 0.8);
+    } else {
+      // Hewan atau tema umum.
+      doc.circle(cx, cy, unit * 0.65, "S");
+      doc.circle(cx - unit * 0.45, cy - unit * 0.55, unit * 0.22, "S");
+      doc.circle(cx + unit * 0.45, cy - unit * 0.55, unit * 0.22, "S");
+      doc.circle(cx - unit * 0.2, cy - unit * 0.05, unit * 0.045, "S");
+      doc.circle(cx + unit * 0.2, cy - unit * 0.05, unit * 0.045, "S");
+      doc.arc(cx, cy + unit * 0.1, unit * 0.2, 20, 150, "S");
+    }
+
+    if (pageNumber % 2 === 0) {
+      doc.circle(x + width * 0.12, y + height * 0.15, unit * 0.08, "S");
+      doc.circle(x + width * 0.87, y + height * 0.22, unit * 0.06, "S");
+    }
+  }
+
+  /* =========================================================
+     HALAMAN SAMPUL
+     ========================================================= */
+
+  function drawCover(doc, settings) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    doc.setDrawColor(50, 65, 90);
+    doc.setLineWidth(1.4);
+
+    doc.roundedRect(
+      margin + 5,
+      margin + 5,
+      width - (margin + 5) * 2,
+      height - (margin + 5) * 2,
+      5,
+      5,
+      "S"
+    );
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(25);
+    doc.setTextColor(35, 45, 60);
+
+    const titleLines = wrapText(
+      doc,
+      settings.title || "Buku Aktivitas Anak",
+      width - margin * 4
+    );
+
+    let titleY = height * 0.22;
+
+    doc.text(titleLines, width / 2, titleY, {
+      align: "center"
+    });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(13);
+
+    doc.text(
+      ACTIVITY_NAMES[settings.type] || "Buku Aktivitas",
+      width / 2,
+      titleY + titleLines.length * 11 + 7,
+      { align: "center" }
+    );
+
+    const illustrationY = height * 0.38;
+    const illustrationHeight = height * 0.3;
+
+    drawIllustration(
+      doc,
+      settings,
+      width * 0.2,
+      illustrationY,
+      width * 0.6,
+      illustrationHeight,
+      1
+    );
+
+    doc.setFontSize(12);
+
+    doc.text(
+      `Tema: ${THEME_NAMES[settings.theme] || settings.theme}`,
+      width / 2,
+      height * 0.77,
+      { align: "center" }
+    );
+
+    doc.text(
+      `Usia: ${settings.age} tahun`,
+      width / 2,
+      height * 0.81,
+      { align: "center" }
+    );
+
+    doc.setFontSize(9);
+
+    doc.text(
+      "Nama: __________________________",
+      width / 2,
+      height * 0.88,
+      { align: "center" }
+    );
+
+    doc.setTextColor(0, 0, 0);
+  }
+
+  /* =========================================================
+     MEWARNAI
+     ========================================================= */
+
+  function drawColoringPage(doc, settings, pageNumber) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    drawPageBorder(doc, margin, width, height);
+    drawPageHeader(doc, settings, pageNumber, "coloring");
+
+    const contentTop = margin + 25;
+    const contentBottom = height - margin - 18;
+    const contentHeight = contentBottom - contentTop;
+
+    drawInstruction(
+      doc,
+      "Warnai gambar ini sesuai kreativitasmu!",
+      margin + 3,
+      contentTop + 7,
+      width - margin * 2 - 6
+    );
+
+    drawIllustration(
+      doc,
+      settings,
+      margin + 7,
+      contentTop + 15,
+      width - margin * 2 - 14,
+      contentHeight - 20,
+      pageNumber
+    );
+
+    drawFooter(doc, pageNumber);
+  }
+
+  /* =========================================================
+     LATIHAN MENULIS
+     ========================================================= */
+
+  function drawTracingPage(doc, settings, pageNumber) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    drawPageBorder(doc, margin, width, height);
+    drawPageHeader(doc, settings, pageNumber, "tracing");
+
+    const plan = state.pagePlans[pageNumber - 1];
+    const word = plan?.word ||
+      pick([
+        "Kucing", "Bunga", "Buku", "Bola", "Rumah",
+        "Pisang", "Mobil", "Bintang", "Pelangi", "Ikan"
+      ]);
+
+    let y = margin + 34;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+
+    doc.text("Tebalkan kata berikut, lalu tulis kembali!", margin + 5, y);
+
+    y += 25;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(settings.age === "3-5" ? 30 : 25);
+    doc.setTextColor(185, 185, 185);
+
+    doc.text(word, width / 2, y, { align: "center" });
+
+    doc.setTextColor(0, 0, 0);
+
+    y += 24;
+
+    const lineGap = settings.age === "3-5" ? 31 : 25;
+    const lineCount = Math.max(
+      3,
+      Math.min(7, Math.floor((height - margin - y - 18) / lineGap))
+    );
+
+    doc.setLineWidth(0.4);
+    doc.setDrawColor(140, 150, 160);
+
+    for (let i = 0; i < lineCount; i++) {
+      const lineY = y + i * lineGap;
+
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(margin + 8, lineY, width - margin - 8, lineY);
+
+      if (settings.age === "3-5") {
+        doc.line(margin + 8, lineY + lineGap * 0.45, width - margin - 8, lineY + lineGap * 0.45);
+      }
+    }
+
+    doc.setLineDashPattern([], 0);
+
+    drawFooter(doc, pageNumber);
+  }
+
+  /* =========================================================
+     MATEMATIKA
+     ========================================================= */
+
+  function createMathQuestion(settings, index, used) {
+    const tools = window.KidsBookTools;
+
+    if (
+      tools &&
+      tools.ActivityEngine &&
+      typeof tools.ActivityEngine.makeMathQuestion === "function"
+    ) {
+      try {
+        return tools.ActivityEngine.makeMathQuestion(
+          {
+            age: settings.age,
+            difficulty: settings.difficulty
+          },
+          index,
+          used
+        );
+      } catch (error) {
+        console.warn("Math engine Vortex gagal:", error);
+      }
+    }
+
+    const ageMax = settings.age === "3-5" ? 10 :
+      settings.age === "6-8" ? 20 : 100;
+
+    let a;
+    let b;
+    let operation;
+    let answer;
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+      operation = settings.difficulty === 1 || settings.age === "3-5"
+        ? pick(["+", "-"])
+        : pick(MATH_OPERATIONS);
+
+      if (operation === "+") {
+        a = randomInt(0, ageMax);
+        b = randomInt(0, ageMax);
+        answer = a + b;
+      } else if (operation === "-") {
+        a = randomInt(0, ageMax);
+        b = randomInt(0, a);
+        answer = a - b;
+      } else {
+        const maxFactor = settings.age === "6-8" ? 10 : 12;
+        a = randomInt(1, maxFactor);
+        b = randomInt(1, maxFactor);
+        answer = a * b;
+      }
+
+      const question = `${a} ${operation} ${b} = ....`;
+
+      if (!used.has(question)) {
+        used.add(question);
+
+        return {
+          number: index + 1,
+          question,
+          answer
+        };
+      }
+    }
+
+    return {
+      number: index + 1,
+      question: "1 + 1 = ....",
+      answer: 2
+    };
+  }
+
+  function drawMathPage(doc, settings, pageNumber) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    drawPageBorder(doc, margin, width, height);
+    drawPageHeader(doc, settings, pageNumber, "math");
+
+    const startY = margin + 31;
+    const bottomY = height - margin - 17;
+    const gap = (bottomY - startY) / 9;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+
+    doc.text(
+      "Selesaikan soal-soal berikut!",
+      margin + 4,
+      startY
+    );
+
+    const questions = [];
+    const used = new Set();
+
+    for (let i = 0; i < 8; i++) {
+      const q = createMathQuestion(settings, i, used);
+      questions.push(q);
+
+      const y = startY + (i + 1) * gap;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(settings.age === "3-5" ? 13 : 11);
+
+      doc.text(`${i + 1}. ${q.question}`, margin + 5, y);
+
+      doc.setDrawColor(130, 140, 150);
+      doc.setLineWidth(0.35);
+
+      doc.line(
+        width - margin - 32,
+        y + 1,
+        width - margin - 6,
+        y + 1
+      );
+    }
+
+    state.questions[pageNumber] = {
+      type: "math",
+      questions
+    };
+
+    drawFooter(doc, pageNumber);
+  }
+
+  /* =========================================================
+     TEKA-TEKI
+     ========================================================= */
+
+  function createPuzzleQuestion(index, used) {
+    const tools = window.KidsBookTools;
+
+    if (
+      tools &&
+      tools.ActivityEngine &&
+      typeof tools.ActivityEngine.makePuzzleQuestion === "function"
+    ) {
+      try {
+        return tools.ActivityEngine.makePuzzleQuestion(index, used);
+      } catch (error) {
+        console.warn("Puzzle engine Vortex gagal:", error);
+      }
+    }
+
+    const available = PUZZLES.filter(item => !used.has(item[0]));
+    const selected = pick(available.length ? available : PUZZLES);
+
+    used.add(selected[0]);
+
+    return {
+      number: index + 1,
+      question: selected[0],
+      answer: selected[1]
+    };
+  }
+
+  function drawPuzzlePage(doc, settings, pageNumber) {
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    drawPageBorder(doc, margin, width, height);
+    drawPageHeader(doc, settings, pageNumber, "puzzle");
+
+    const startY = margin + 31;
+    const bottomY = height - margin - 18;
+    const usableHeight = bottomY - startY;
+    const rowHeight = usableHeight / 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    doc.text(
+      "Bacalah petunjuk dan tulis jawabanmu!",
+      margin + 4,
+      startY
+    );
+
+    const questions = [];
+    const used = new Set();
+
+    for (let i = 0; i < 4; i++) {
+      const q = createPuzzleQuestion(i, used);
+      questions.push(q);
+
+      const y = startY + 15 + i * rowHeight;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+
+      doc.text(`${i + 1}.`, margin + 5, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      const lines = wrapText(
+        doc,
+        q.question,
+        width - margin * 2 - 22
+      );
+
+      doc.text(lines, margin + 13, y);
+
+      const answerY = y + Math.max(10, lines.length * 4.5 + 3);
+
+      doc.setDrawColor(140, 150, 160);
+      doc.setLineWidth(0.35);
+
+      doc.line(
+        margin + 13,
+        answerY,
+        width - margin - 7,
+        answerY
+      );
+    }
+
+    state.questions[pageNumber] = {
+      type: "puzzle",
+      questions
+    };
+
+    drawFooter(doc, pageNumber);
+  }
+
+  /* =========================================================
+     ROUTER HALAMAN
+     ========================================================= */
+
+  function drawActivityPage(doc, settings, pageNumber) {
+    const type = getPageType(settings, pageNumber);
+
+    if (type === "coloring") {
+      drawColoringPage(doc, settings, pageNumber);
+    } else if (type === "tracing") {
+      drawTracingPage(doc, settings, pageNumber);
+    } else if (type === "math") {
+      drawMathPage(doc, settings, pageNumber);
+    } else if (type === "puzzle") {
+      drawPuzzlePage(doc, settings, pageNumber);
+    } else {
+      drawColoringPage(doc, settings, pageNumber);
+    }
+  }
+
+  /* =========================================================
+     KUNCI JAWABAN
+     ========================================================= */
+
+  function drawAnswerPages(doc, settings) {
+    if (!settings.answers) return;
+
+    const entries = Object.entries(state.questions)
+      .filter(([, data]) => data && data.questions && data.questions.length);
+
+    if (!entries.length) return;
+
+    const { width, height } = getPageSize(doc);
+    const margin = getMargin(doc);
+
+    let y = margin + 15;
+    let answerPage = 1;
+
+    function newAnswerPage() {
+      if (answerPage > 1 || entries.length > 0) {
+        doc.addPage();
+      }
+
+      answerPage++;
+
+      y = margin + 15;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(17);
+      doc.text("Kunci Jawaban", width / 2, y, { align: "center" });
+
+      y += 12;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      doc.text(
+        `Buku: ${settings.title}`,
+        margin + 3,
+        y
+      );
+
+      y += 10;
+    }
+
+    newAnswerPage();
+
+    for (const [pageString, data] of entries) {
+      const pageNumber = Number(pageString);
+      const heading = `Halaman aktivitas ${pageNumber}`;
+
+      if (y > height - margin - 25) {
+        newAnswerPage();
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(heading, margin + 3, y);
+
+      y += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      for (let i = 0; i < data.questions.length; i++) {
+        const q = data.questions[i];
+        const answer = safeText(q.answer, "-");
+        const questionText = `${i + 1}. ${answer}`;
+        const lines = wrapText(questionText, width - margin * 2 - 8);
+
+        const neededHeight = lines.length * 4.5 + 3;
+
+        if (y + neededHeight > height - margin - 15) {
+          newAnswerPage();
+        }
+
+        doc.text(lines, margin + 5, y);
+        y += neededHeight;
+      }
+
+      y += 4;
+    }
+  }
+
+  /* =========================================================
+     PREVIEW
+     ========================================================= */
+
+  function updatePreview() {
+    const settings = getSettings();
+
+    const title = $("previewTitle");
+    const type = $("previewType");
+    const theme = $("previewTheme");
+    const difficulty = $("previewDifficulty");
+    const icon = $("previewIcon");
+
+    if (title) {
+      title.textContent = settings.title || "Buku Aktivitas Anak";
+    }
+
+    if (type) {
+      type.textContent =
+        `${ACTIVITY_ICONS[settings.type] || "📚"} ` +
+        `${ACTIVITY_NAMES[settings.type] || settings.type}`;
+    }
+
+    if (theme) {
+      theme.textContent =
+        `${THEME_ICONS[settings.theme] || "🎨"} ` +
+        `${THEME_NAMES[settings.theme] || settings.theme}`;
+    }
+
+    if (difficulty) {
+      difficulty.textContent = [
+        "Mudah",
+        "Menengah",
+        "Sulit"
+      ][settings.difficulty - 1];
+    }
+
+    if (icon) {
+      icon.textContent = THEME_ICONS[settings.theme] || "📚";
+    }
+
+    const count = $("previewPageCount");
+
+    if (count) {
+      count.textContent = `${settings.pages} halaman aktivitas`;
+    }
+
+    const agePreview = $("previewAge");
+
+    if (agePreview) {
+      agePreview.textContent = `Usia ${settings.age} tahun`;
+    }
+  }
+
+  /* =========================================================
+     GENERATE PDF
+     ========================================================= */
+
+  async function generatePDF() {
+    if (state.isGenerating) return;
+
+    let doc;
+
+    try {
+      const settings = getSettings();
+
+      const JsPDF = getJsPDF();
+
+      state.isGenerating = true;
+      state.totalPages = settings.pages;
+      state.currentPage = 1;
+      state.questions = [];
+      state.pagePlans = [];
+      state.lastSettings = settings;
+
+      cleanPreviousPDF();
+
+      const button = $("generateBtn");
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Membuat PDF...";
+      }
+
+      setProgress(0, "Menyiapkan dokumen...");
+
+      const format = settings.paperSize === "letter"
+        ? "letter"
+        : settings.paperSize === "a5"
+          ? "a5"
+          : "a4";
+
+      doc = new JsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format,
+        compress: true
+      });
+
+      const bookSet = new Set();
+
+      // Rencanakan semua halaman lebih dulu.
+      for (let page = 1; page <= settings.pages; page++) {
+        state.pagePlans.push(
+          getPagePlan(settings, page, bookSet)
+        );
+      }
+
+      // PERBAIKAN BUG HALAMAN KOSONG:
+      // jsPDF sudah memiliki halaman pertama.
+      // Sampul digambar pada halaman pertama, bukan halaman baru.
+      if (settings.cover) {
+        drawCover(doc, settings);
+      }
+
+      for (let page = 1; page <= settings.pages; page++) {
+        // Jika ada sampul, setiap aktivitas memakai halaman baru.
+        // Tanpa sampul, aktivitas pertama menggunakan halaman awal.
+        if (settings.cover || page > 1) {
+          doc.addPage();
+        }
+
+        drawActivityPage(doc, settings, page);
+
+        const percent = Math.round((page / settings.pages) * 90);
+
+        setProgress(
+          percent,
+          `Membuat halaman ${page} dari ${settings.pages}...`
+        );
+
+        // Beri kesempatan browser memperbarui tampilan.
+        if (page % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+
+      setProgress(93, "Menyusun kunci jawaban...");
+
+      drawAnswerPages(doc, settings);
+
+      setProgress(97, "Menyiapkan file PDF...");
+
+      const blob = doc.output("blob");
+
+      state.pdfBlob = blob;
+      state.pdfUrl = URL.createObjectURL(blob);
+
+      const downloadButton = $("downloadBtn");
+
+      if (downloadButton) {
+        downloadButton.disabled = false;
+        downloadButton.onclick = downloadPDF;
+      }
+
+      const previewFrame = $("pdfPreview");
+
+      if (previewFrame) {
+        previewFrame.src = state.pdfUrl;
+      }
+
+      const result = $("resultContainer");
+
+      if (result) {
+        result.classList.remove("hidden");
+      }
+
+      const pageCountElement = $("resultPageCount");
+
+      if (pageCountElement) {
+        pageCountElement.textContent =
+          `${settings.pages} halaman aktivitas` +
+          `${settings.cover ? " + sampul" : ""}` +
+          `${settings.answers && Object.keys(state.questions).length ? " + kunci jawaban" : ""}`;
+      }
+
+      setProgress(100, "PDF berhasil dibuat!");
+
+      showToast("PDF berhasil dibuat!", "success");
+
+      setTimeout(hideProgress, 1500);
+    } catch (error) {
+      console.error("Gagal membuat PDF:", error);
+
+      showToast(
+        `Gagal membuat PDF: ${error.message || "Kesalahan tidak diketahui"}`,
+        "error"
+      );
+
+      hideProgress();
+    } finally {
+      state.isGenerating = false;
+
+      const button = $("generateBtn");
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Buat PDF";
+      }
+    }
+  }
+
+  function downloadPDF() {
+    if (!state.pdfBlob) {
+      showToast("Buat PDF terlebih dahulu.", "error");
+      return;
+    }
+
+    const settings = state.lastSettings || getSettings();
+
+    const filename = (settings.title || "buku-aktivitas")
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .replace(/\s+/g, "-")
+      .slice(0, 80) || "buku-aktivitas";
+
+    const link = document.createElement("a");
+
+    link.href = state.pdfUrl;
+    link.download = `${filename}.pdf`;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  /* =========================================================
+     MODE GELAP
+     ========================================================= */
+
+  function setupThemeToggle() {
+    const button =
+      $("themeToggle") ||
+      $("darkModeToggle") ||
+      $("toggleTheme");
+
+    function applyTheme(dark) {
+      document.body.classList.toggle("dark-mode", dark);
+      document.documentElement.classList.toggle("dark-mode", dark);
+
+      try {
+        localStorage.setItem("kidsbook-dark-mode", dark ? "1" : "0");
+      } catch (error) {
+        console.warn("Preferensi tema tidak dapat disimpan.", error);
+      }
+
+      if (button) {
+        button.textContent = dark ? "☀️" : "🌙";
+        button.setAttribute(
+          "aria-label",
+          dark ? "Aktifkan mode terang" : "Aktifkan mode gelap"
+        );
+      }
+    }
+
+    let savedDark = false;
+
+    try {
+      savedDark = localStorage.getItem("kidsbook-dark-mode") === "1";
+    } catch (error) {
+      console.warn("Preferensi tema tidak dapat dibaca.", error);
+    }
+
+    applyTheme(savedDark);
+
+    if (button) {
+      button.addEventListener("click", () => {
+        const isDark =
+          document.body.classList.contains("dark-mode");
+
+        applyTheme(!isDark);
+      });
+    }
+  }
+
+  /* =========================================================
+     VORTEX STATUS
+     ========================================================= */
+
+  function updateVortexStatus() {
+    const statusElement = $("vortexStatus");
+
+    if (!statusElement) return;
+
+    const tools = window.KidsBookTools;
+
+    if (!tools || typeof tools.getStatus !== "function") {
+      statusElement.textContent =
+        "Vortex tidak ditemukan. Periksa tools.js.";
+      return;
+    }
+
+    try {
+      const status = tools.getStatus();
+
+      statusElement.textContent =
+        `${status.name || "Vortex"} • ` +
+        `${status.mode || "Mode lokal"} • ` +
+        `${status.imageMode || "Ilustrasi vektor tersedia"}`;
+    } catch (error) {
+      console.warn("Status Vortex tidak dapat dibaca:", error);
+
+      statusElement.textContent = "Vortex tersedia dalam mode lokal.";
+    }
+  }
+
+  /* =========================================================
+     EVENT
+     ========================================================= */
+
+  function setupEvents() {
+    const formIds = [
+      "bookTitle",
+      "bookType",
+      "paperSize",
+      "pageCount",
+      "ageGroup",
+      "theme",
+      "difficulty",
+      "includeCover",
+      "includeAnswers"
+    ];
+
+    formIds.forEach(id => {
+      const element = $(id);
+
+      if (!element) return;
+
+      element.addEventListener("input", updatePreview);
+      element.addEventListener("change", updatePreview);
+    });
+
+    const generateButton = $("generateBtn");
+
+    if (generateButton) {
+      generateButton.addEventListener("click", event => {
+        event.preventDefault();
+        generatePDF();
+      });
+    }
+
+    const downloadButton = $("downloadBtn");
+
+    if (downloadButton) {
+      downloadButton.disabled = true;
+      downloadButton.addEventListener("click", event => {
+        event.preventDefault();
+        downloadPDF();
+      });
+    }
+
+    const previousButton =
+      $("prevPageBtn") ||
+      $("previousPageBtn");
+
+    const nextButton = $("nextPageBtn");
+
+    if (previousButton) {
+      previousButton.addEventListener("click", () => {
+        if (state.currentPage > 1) {
+          state.currentPage--;
+          updatePageNavigation();
+        }
+      });
+    }
+
+    if (nextButton) {
+      nextButton.addEventListener("click", () => {
+        if (state.currentPage < state.totalPages) {
+          state.currentPage++;
+          updatePageNavigation();
+        }
+      });
+    }
+  }
+
+  function updatePageNavigation() {
+    const pageNumber = $("currentPageNumber");
+
+    if (pageNumber) {
+      pageNumber.textContent =
+        `${state.currentPage} / ${state.totalPages}`;
+    }
+
+    const previousButton =
+      $("prevPageBtn") ||
+      $("previousPageBtn");
+
+    const nextButton = $("nextPageBtn");
+
+    if (previousButton) {
+      previousButton.disabled = state.currentPage <= 1;
+    }
+
+    if (nextButton) {
+      nextButton.disabled =
+        state.currentPage >= state.totalPages;
+    }
+  }
+
+  /* =========================================================
+     INISIALISASI
+     ========================================================= */
+
+  function init() {
+    setupEvents();
+    setupThemeToggle();
+    updatePreview();
+    updateVortexStatus();
+
+    console.info("[KidsBook Studio] app.js siap.");
+    console.info(
+      "[KidsBook Studio] Vortex:",
+      window.KidsBookTools ? "tersambung" : "tidak ditemukan"
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+})();
